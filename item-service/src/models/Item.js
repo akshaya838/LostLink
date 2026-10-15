@@ -20,6 +20,8 @@ const itemSchema = new mongoose.Schema(
       match: [/^\S+@\S+\.\S+$/, 'Invalid email'],
     },
     reporterPhone: { type: String, trim: true, default: '' },
+    // Account (User Service) that posted the report
+    reporterId: { type: String, default: '', index: true },
     // open -> claimed (set by Claim Service on approval) -> resolved/closed
     status: { type: String, enum: ['open', 'claimed', 'resolved'], default: 'open' },
     claimedBy: { type: String, default: '' },

@@ -1,23 +1,27 @@
 import { useEffect, useState } from 'react';
-import { health, ITEM_URL, CLAIM_URL, errMsg } from '../api.js';
+import { health, ITEM_URL, CLAIM_URL, USER_URL, errMsg } from '../api.js';
+
+const SERVICES = [
+  ['item', 'Item Service', 'Lost and found reports', 'lostlink_items', ITEM_URL],
+  ['claim', 'Claim Service', 'Claims, questions and reviews', 'lostlink_claims', CLAIM_URL],
+  ['user', 'User Service', 'Student and admin accounts', 'lostlink_users', USER_URL],
+];
 
 // Shows the live health of each independently deployed microservice
 export default function Status() {
-  const [state, setState] = useState({ item: null, claim: null });
+  const [state, setState] = useState({});
 
   async function check() {
-    setState({ item: null, claim: null });
-    const run = async (key, fn) => {
+    setState({});
+    SERVICES.forEach(async ([key]) => {
       const t0 = performance.now();
       try {
-        const data = await fn();
+        const data = await health[key]();
         setState((s) => ({ ...s, [key]: { ok: true, data, ms: Math.round(performance.now() - t0) } }));
       } catch (err) {
         setState((s) => ({ ...s, [key]: { ok: false, error: errMsg(err) } }));
       }
-    };
-    run('item', health.item);
-    run('claim', health.claim);
+    });
   }
 
   useEffect(() => { check(); }, []);
@@ -27,51 +31,71 @@ export default function Status() {
       <div className="page-head">
         <h1>System status</h1>
         <p className="lede">
-          LostLink runs as two separate services, each deployed on its own and each with its own database. They talk to
-          each other over REST.
+          LostLink runs as three separate services. Each is deployed on its own, has its own database, and talks to the
+          others over REST.
         </p>
       </div>
 
       <div className="services">
-        <ServiceCard name="Item Service" role="Lost and found reports" db="lostlink_items" url={ITEM_URL} s={state.item} />
-        <ServiceCard name="Claim Service" role="Ownership claims and reviews" db="lostlink_claims" url={CLAIM_URL} s={state.claim} />
+        {SERVICES.map(([key, name, role, db, url]) => (
+          <ServiceCard key={key} name={name} role={role} db={db} url={url} s={state[key]} />
+        ))}
       </div>
       <button className="btn" onClick={check}>Check again</button>
 
       <section className="panel arch" aria-labelledby="arch-title">
         <h2 id="arch-title">How the pieces connect</h2>
-        <svg viewBox="0 0 720 300" role="img" aria-label="React frontend calls both services; the services call each other; each has its own MongoDB database">
-          <rect x="260" y="10" width="200" height="56" rx="10" className="a-box" />
-          <text x="360" y="36" className="a-t">React frontend</text>
-          <text x="360" y="54" className="a-s">Vercel</text>
-
-          <rect x="40" y="130" width="230" height="64" rx="10" className="a-box a-strong" />
-          <text x="155" y="158" className="a-t">Item Service</text>
-          <text x="155" y="177" className="a-s">Render, /api/items</text>
-
-          <rect x="450" y="130" width="230" height="64" rx="10" className="a-box a-strong" />
-          <text x="565" y="158" className="a-t">Claim Service</text>
-          <text x="565" y="177" className="a-s">Render, /api/claims</text>
-
-          <rect x="55" y="240" width="200" height="46" rx="23" className="a-db" />
-          <text x="155" y="268" className="a-s">MongoDB lostlink_items</text>
-          <rect x="465" y="240" width="200" height="46" rx="23" className="a-db" />
-          <text x="565" y="268" className="a-s">MongoDB lostlink_claims</text>
-
-          <path d="M320 66 L190 128" className="a-line" markerEnd="url(#arr)" />
-          <path d="M400 66 L530 128" className="a-line" markerEnd="url(#arr)" />
-          <path d="M272 150 L446 150" className="a-line a-rest" markerEnd="url(#arr)" />
-          <path d="M448 176 L274 176" className="a-line a-rest" markerEnd="url(#arr)" />
-          <text x="360" y="143" className="a-s">validate item, set status</text>
-          <text x="360" y="192" className="a-s">fetch and delete claims</text>
-          <path d="M155 196 L155 238" className="a-line" />
-          <path d="M565 196 L565 238" className="a-line" />
+        <svg viewBox="0 0 720 330" role="img" aria-label="React frontend calls all three services. The Claim Service calls the Item Service and the User Service; the Item Service calls the Claim Service. Each service has its own MongoDB database.">
           <defs>
             <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
               <path d="M0 0 L10 5 L0 10 z" className="a-head" />
             </marker>
+            <marker id="arrb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" className="a-head-rest" />
+            </marker>
           </defs>
+
+          <rect x="260" y="8" width="200" height="54" rx="10" className="a-box" />
+          <text x="360" y="33" className="a-t">React frontend</text>
+          <text x="360" y="51" className="a-s">Vercel, Axios + login token</text>
+
+          <path d="M300 62 L130 138" className="a-line" markerEnd="url(#arr)" />
+          <path d="M360 62 L360 138" className="a-line" markerEnd="url(#arr)" />
+          <path d="M420 62 L590 138" className="a-line" markerEnd="url(#arr)" />
+
+          <rect x="20" y="140" width="210" height="62" rx="10" className="a-box a-strong" />
+          <text x="125" y="167" className="a-t">Item Service</text>
+          <text x="125" y="186" className="a-s">/api/items</text>
+
+          <rect x="255" y="140" width="210" height="62" rx="10" className="a-box a-strong" />
+          <text x="360" y="167" className="a-t">Claim Service</text>
+          <text x="360" y="186" className="a-s">/api/claims</text>
+
+          <rect x="490" y="140" width="210" height="62" rx="10" className="a-box a-strong" />
+          <text x="595" y="167" className="a-t">User Service</text>
+          <text x="595" y="186" className="a-s">/api/auth, /api/users</text>
+
+          <path d="M253 158 L233 158" className="a-line a-rest" markerEnd="url(#arrb)" />
+          <path d="M232 184 L252 184" className="a-line a-rest" markerEnd="url(#arrb)" />
+          <path d="M467 171 L487 171" className="a-line a-rest" markerEnd="url(#arrb)" />
+          <text x="242" y="228" className="a-s a-note">check item, set status</text>
+          <text x="242" y="244" className="a-s a-note">list and delete claims</text>
+          <text x="478" y="228" className="a-s a-note">claimant profile</text>
+
+          <path d="M125 202 L125 270" className="a-line" />
+          <path d="M360 202 L360 270" className="a-line" />
+          <path d="M595 202 L595 270" className="a-line" />
+          <rect x="35" y="272" width="180" height="44" rx="22" className="a-db" />
+          <text x="125" y="299" className="a-s">lostlink_items</text>
+          <rect x="270" y="272" width="180" height="44" rx="22" className="a-db" />
+          <text x="360" y="299" className="a-s">lostlink_claims</text>
+          <rect x="505" y="272" width="180" height="44" rx="22" className="a-db" />
+          <text x="595" y="299" className="a-s">lostlink_users</text>
         </svg>
+        <p className="small muted">
+          Logins are checked inside each service using a shared signing secret, so a request never has to wait on the
+          User Service just to prove who you are.
+        </p>
       </section>
     </>
   );

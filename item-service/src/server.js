@@ -37,6 +37,10 @@ app.use(notFound);
 app.use(errorHandler);
 
 async function start() {
+  if (!process.env.JWT_SECRET) {
+    console.error('[item-service] JWT_SECRET is not set');
+    process.exit(1);
+  }
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log('[item-service] Connected to MongoDB');

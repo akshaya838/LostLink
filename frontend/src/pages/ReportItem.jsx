@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { items as itemApi, errMsg } from '../api.js';
 import { Alert, Spinner } from '../components/ui.jsx';
+import { useAuth } from '../auth.jsx';
 
 const EMPTY = {
   type: 'lost',
@@ -11,15 +12,14 @@ const EMPTY = {
   location: '',
   date: new Date().toISOString().slice(0, 10),
   imageUrl: '',
-  reporterName: '',
-  reporterEmail: '',
   reporterPhone: '',
 };
 
 export default function ReportItem() {
   const { id } = useParams(); // present when editing
   const navigate = useNavigate();
-  const [form, setForm] = useState(EMPTY);
+  const { user } = useAuth();
+  const [form, setForm] = useState({ ...EMPTY, reporterPhone: user?.phone || '' });
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(!!id);
   const [saving, setSaving] = useState(false);
@@ -97,10 +97,9 @@ export default function ReportItem() {
         <label><span className="label-row">Photo link <span className="optional">optional</span></span><input type="url" value={form.imageUrl} onChange={set('imageUrl')} placeholder="https://" /></label>
 
         <h2 className="form-section">How can people reach you?</h2>
-        <div className="two">
-          <label>Your name<input required value={form.reporterName} onChange={set('reporterName')} autoComplete="name" /></label>
-          <label>Email<input type="email" required value={form.reporterEmail} onChange={set('reporterEmail')} autoComplete="email" /></label>
-        </div>
+        <p className="posting-as">
+          Posting as <strong>{id ? form.reporterName : user.name}</strong>, {id ? form.reporterEmail : user.email}
+        </p>
         <label><span className="label-row">Phone <span className="optional">optional</span></span><input value={form.reporterPhone} onChange={set('reporterPhone')} autoComplete="tel" /></label>
 
         <button className="btn btn-primary btn-block" disabled={saving}>

@@ -1,6 +1,5 @@
-# Render Blueprint: deploys both microservices as independent web services.
-# Render dashboard -> New -> Blueprint -> select this repo.
-# Secrets marked sync:false are entered in the dashboard.
+# Render Blueprint: deploys the three microservices as independent web services.
+# Secrets marked sync:false are entered in the Render dashboard.
 services:
   - type: web
     name: lostlink-item-service
@@ -12,11 +11,13 @@ services:
     healthCheckPath: /health
     envVars:
       - key: MONGO_URI
-        sync: false
+        sync: false # Atlas URI ending in /lostlink_items?...
       - key: CLAIM_SERVICE_URL
         sync: false # e.g. https://lostlink-claim-service.onrender.com
       - key: SERVICE_KEY
         sync: false
+      - key: JWT_SECRET
+        sync: false # same value on all three services
       - key: CORS_ORIGIN
         value: "*"
 
@@ -30,10 +31,38 @@ services:
     healthCheckPath: /health
     envVars:
       - key: MONGO_URI
-        sync: false
+        sync: false # Atlas URI ending in /lostlink_claims?...
       - key: ITEM_SERVICE_URL
         sync: false # e.g. https://lostlink-item-service.onrender.com
+      - key: USER_SERVICE_URL
+        sync: false # e.g. https://lostlink-user-service.onrender.com
       - key: SERVICE_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        value: "*"
+
+  - type: web
+    name: lostlink-user-service
+    runtime: node
+    rootDir: user-service
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: MONGO_URI
+        sync: false # Atlas URI ending in /lostlink_users?...
+      - key: SERVICE_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_NAME
+        value: Lost and Found Desk
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
         sync: false
       - key: CORS_ORIGIN
         value: "*"
