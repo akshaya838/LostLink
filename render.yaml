@@ -1,0 +1,39 @@
+# Render Blueprint: deploys both microservices as independent web services.
+# Render dashboard -> New -> Blueprint -> select this repo.
+# Secrets marked sync:false are entered in the dashboard.
+services:
+  - type: web
+    name: lostlink-item-service
+    runtime: node
+    rootDir: item-service
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: CLAIM_SERVICE_URL
+        sync: false # e.g. https://lostlink-claim-service.onrender.com
+      - key: SERVICE_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        value: "*"
+
+  - type: web
+    name: lostlink-claim-service
+    runtime: node
+    rootDir: claim-service
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: ITEM_SERVICE_URL
+        sync: false # e.g. https://lostlink-item-service.onrender.com
+      - key: SERVICE_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        value: "*"

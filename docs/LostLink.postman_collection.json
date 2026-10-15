@@ -1,0 +1,1276 @@
+{
+  "info": {
+    "name": "LostLink Microservices API",
+    "description": "Item Service + Claim Service. Run folders in order (1 → 4). Set itemUrl/claimUrl to your Render URLs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "itemUrl",
+      "value": "http://localhost:5001"
+    },
+    {
+      "key": "claimUrl",
+      "value": "http://localhost:5002"
+    },
+    {
+      "key": "serviceKey",
+      "value": "change-me-to-a-long-random-string"
+    },
+    {
+      "key": "itemId",
+      "value": ""
+    },
+    {
+      "key": "lostItemId",
+      "value": ""
+    },
+    {
+      "key": "claimId",
+      "value": ""
+    },
+    {
+      "key": "claimId2",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Health",
+      "item": [
+        {
+          "name": "Item Service health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Service is item-service', () => pm.expect(pm.response.json().service).to.eql('item-service'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{itemUrl}}/health",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Claim Service health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Service is claim-service', () => pm.expect(pm.response.json().service).to.eql('claim-service'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{claimUrl}}/health",
+              "host": [
+                "{{claimUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Item Service - CRUD",
+      "item": [
+        {
+          "name": "Create FOUND item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('itemId', pm.response.json().data._id);",
+                  "pm.test('Status is open', () => pm.expect(pm.response.json().data.status).to.eql('open'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"found\",\n  \"title\": \"Blue Milton water bottle\",\n  \"description\": \"Blue steel bottle with a Batman sticker on the cap\",\n  \"category\": \"Bottle\",\n  \"location\": \"Central Library, 2nd floor\",\n  \"date\": \"2026-10-10\",\n  \"reporterName\": \"Ravi Kumar\",\n  \"reporterEmail\": \"ravi@college.edu\",\n  \"reporterPhone\": \"9876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{itemUrl}}/api/items",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create LOST item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('lostItemId', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"lost\",\n  \"title\": \"Student ID card\",\n  \"description\": \"ID card in a red lanyard, name Meena S\",\n  \"category\": \"ID Card\",\n  \"location\": \"Main canteen\",\n  \"date\": \"2026-10-11\",\n  \"reporterName\": \"Meena S\",\n  \"reporterEmail\": \"meena@college.edu\"\n}"
+            },
+            "url": {
+              "raw": "{{itemUrl}}/api/items",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create item - validation error",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Has errors array', () => pm.expect(pm.response.json().errors).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"lost\"\n}"
+            },
+            "url": {
+              "raw": "{{itemUrl}}/api/items",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List all items",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{itemUrl}}/api/items",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter items (type=found&status=open)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{itemUrl}}/api/items?type=found&status=open",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "found"
+                },
+                {
+                  "key": "status",
+                  "value": "open"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search items",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{itemUrl}}/api/items?search=library",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "library"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Item stats",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{itemUrl}}/api/items/stats",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "stats"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{itemUrl}}/api/items/categories",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "categories"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get item by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{itemUrl}}/api/items/{{itemId}}",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{itemId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Location updated', () => pm.expect(pm.response.json().data.location).to.include('Reading Hall'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"location\": \"Central Library, Reading Hall\"\n}"
+            },
+            "url": {
+              "raw": "{{itemUrl}}/api/items/{{itemId}}",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{itemId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get item - invalid id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{itemUrl}}/api/items/abc",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "abc"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Internal status - no key (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"claimed\"\n}"
+            },
+            "url": {
+              "raw": "{{itemUrl}}/api/items/{{itemId}}/status",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{itemId}}",
+                "status"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Claim Service - CRUD",
+      "item": [
+        {
+          "name": "Create claim (validates item via Item Service)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('claimId', pm.response.json().data._id);",
+                  "pm.test('itemTitle came from Item Service', () => pm.expect(pm.response.json().data.itemTitle).to.eql('Blue Milton water bottle'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"{{itemId}}\",\n  \"claimantName\": \"Arun P\",\n  \"claimantEmail\": \"arun@college.edu\",\n  \"claimantPhone\": \"9123456780\",\n  \"rollNumber\": \"22CS101\",\n  \"proofDescription\": \"It has a Batman sticker on the cap and a dent at the bottom\"\n}"
+            },
+            "url": {
+              "raw": "{{claimUrl}}/api/claims",
+              "host": [
+                "{{claimUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create second claim",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('claimId2', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"{{itemId}}\",\n  \"claimantName\": \"Kavya R\",\n  \"claimantEmail\": \"kavya@college.edu\",\n  \"proofDescription\": \"I lost a blue bottle in the library last week\"\n}"
+            },
+            "url": {
+              "raw": "{{claimUrl}}/api/claims",
+              "host": [
+                "{{claimUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Duplicate claim (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"{{itemId}}\",\n  \"claimantName\": \"Arun P\",\n  \"claimantEmail\": \"arun@college.edu\",\n  \"proofDescription\": \"It has a Batman sticker on the cap\"\n}"
+            },
+            "url": {
+              "raw": "{{claimUrl}}/api/claims",
+              "host": [
+                "{{claimUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Claim non-existent item (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"0123456789abcdef01234567\",\n  \"claimantName\": \"X\",\n  \"claimantEmail\": \"x@college.edu\",\n  \"proofDescription\": \"This should fail validation\"\n}"
+            },
+            "url": {
+              "raw": "{{claimUrl}}/api/claims",
+              "host": [
+                "{{claimUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List claims",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{claimUrl}}/api/claims",
+              "host": [
+                "{{claimUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List pending claims",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{claimUrl}}/api/claims?status=pending",
+              "host": [
+                "{{claimUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Claim stats",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{claimUrl}}/api/claims/stats",
+              "host": [
+                "{{claimUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims",
+                "stats"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get claim by id (with item)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Embedded item present', () => pm.expect(pm.response.json().data.item).to.be.an('object'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{claimUrl}}/api/claims/{{claimId}}",
+              "host": [
+                "{{claimUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims",
+                "{{claimId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update claim",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"claimantPhone\": \"9000000000\"\n}"
+            },
+            "url": {
+              "raw": "{{claimUrl}}/api/claims/{{claimId}}",
+              "host": [
+                "{{claimUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims",
+                "{{claimId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Inter-Service Communication",
+      "item": [
+        {
+          "name": "Item + its claims (Item → Claim Service)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Claims fetched from Claim Service', () => { const d = pm.response.json().data; pm.expect(d.claimServiceAvailable).to.be.true; pm.expect(d.claimCount).to.be.at.least(2); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{itemUrl}}/api/items/{{itemId}}/with-claims",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{itemId}}",
+                "with-claims"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Claims enriched with items (Claim → Item Service)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Each claim has item', () => pm.response.json().data.forEach(c => pm.expect(c).to.have.property('item')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{claimUrl}}/api/claims/with-items",
+              "host": [
+                "{{claimUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims",
+                "with-items"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Approve claim (updates Item Service)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Item now claimed', () => pm.expect(pm.response.json().data.item.status).to.eql('claimed'));",
+                  "pm.test('Other pending claim auto-rejected', () => pm.expect(pm.response.json().data.autoRejected).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"adminNote\": \"Verified sticker and dent\"\n}"
+            },
+            "url": {
+              "raw": "{{claimUrl}}/api/claims/{{claimId}}/approve",
+              "host": [
+                "{{claimUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims",
+                "{{claimId}}",
+                "approve"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify item is claimed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status = claimed', () => pm.expect(pm.response.json().data.status).to.eql('claimed'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{itemUrl}}/api/items/{{itemId}}",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{itemId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Claim already-claimed item (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"{{itemId}}\",\n  \"claimantName\": \"Late\",\n  \"claimantEmail\": \"late@college.edu\",\n  \"proofDescription\": \"Trying to claim too late\"\n}"
+            },
+            "url": {
+              "raw": "{{claimUrl}}/api/claims",
+              "host": [
+                "{{claimUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark item resolved (handed over)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{itemUrl}}/api/items/{{itemId}}/resolve",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{itemId}}",
+                "resolve"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Claim for LOST item + reject",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('claimId2', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"{{lostItemId}}\",\n  \"claimantName\": \"Suresh\",\n  \"claimantEmail\": \"suresh@college.edu\",\n  \"proofDescription\": \"Found an ID card with red lanyard near canteen\"\n}"
+            },
+            "url": {
+              "raw": "{{claimUrl}}/api/claims",
+              "host": [
+                "{{claimUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reject claim",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"adminNote\": \"Name does not match\"\n}"
+            },
+            "url": {
+              "raw": "{{claimUrl}}/api/claims/{{claimId2}}/reject",
+              "host": [
+                "{{claimUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims",
+                "{{claimId2}}",
+                "reject"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Internal status update (with key)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-service-key",
+                "value": "{{serviceKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"open\"\n}"
+            },
+            "url": {
+              "raw": "{{itemUrl}}/api/items/{{lostItemId}}/status",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{lostItemId}}",
+                "status"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Cleanup (Delete)",
+      "item": [
+        {
+          "name": "Delete claim",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{claimUrl}}/api/claims/{{claimId2}}",
+              "host": [
+                "{{claimUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims",
+                "{{claimId2}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete item (cascades claims via REST)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Claims cascaded', () => pm.expect(pm.response.json().claimsDeleted).to.be.at.least(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{itemUrl}}/api/items/{{itemId}}",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{itemId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete lost item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{itemUrl}}/api/items/{{lostItemId}}",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{lostItemId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Deleted item → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{itemUrl}}/api/items/{{itemId}}",
+              "host": [
+                "{{itemUrl}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{itemId}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
