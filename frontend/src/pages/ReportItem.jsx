@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { items as itemApi, errMsg } from '../api.js';
 import { Alert, Spinner } from '../components/ui.jsx';
 
@@ -37,6 +37,7 @@ export default function ReportItem() {
   }, [id]);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  const lost = form.type === 'lost';
 
   async function submit(e) {
     e.preventDefault();
@@ -56,20 +57,32 @@ export default function ReportItem() {
 
   return (
     <div className="narrow">
-      <h1>{id ? 'Edit item' : 'Report an item'}</h1>
+      <Link to={id ? `/items/${id}` : '/'} className="back">{id ? 'Back to the item' : 'Back to the board'}</Link>
+      <h1>{id ? 'Edit your report' : 'Report an item'}</h1>
+      <p className="lede">The more detail you give, the easier it is to match the item with its owner.</p>
       <Alert onClose={() => setError('')}>{error}</Alert>
 
-      <form className="card form" onSubmit={submit}>
-        <div className="toggle">
-          {['lost', 'found'].map((t) => (
-            <button type="button" key={t} className={form.type === t ? `active ${t}` : ''} onClick={() => setForm({ ...form, type: t })}>
-              I {t} something
-            </button>
-          ))}
-        </div>
+      <form className="panel form" onSubmit={submit}>
+        <fieldset className="choice">
+          <legend>What happened?</legend>
+          <label className={`choice-opt lost ${lost ? 'on' : ''}`}>
+            <input type="radio" name="type" value="lost" checked={lost} onChange={set('type')} />
+            <span className="choice-title">I lost something</span>
+            <span className="choice-sub">Others can tell you if they've found it</span>
+          </label>
+          <label className={`choice-opt found ${!lost ? 'on' : ''}`}>
+            <input type="radio" name="type" value="found" checked={!lost} onChange={set('type')} />
+            <span className="choice-title">I found something</span>
+            <span className="choice-sub">The owner can claim it with proof</span>
+          </label>
+        </fieldset>
 
-        <label>Title *<input required maxLength={100} value={form.title} onChange={set('title')} placeholder="e.g. Black HP laptop charger" /></label>
-        <label>Description *<textarea required rows={4} value={form.description} onChange={set('description')} placeholder="Colour, brand, distinguishing marks…" /></label>
+        <label>What is it?<input required maxLength={100} value={form.title} onChange={set('title')} placeholder="Black HP laptop charger" /></label>
+        <label>
+          Describe it
+          <textarea required rows={4} value={form.description} onChange={set('description')}
+            placeholder={lost ? 'Colour, brand, stickers, anything that makes it yours' : 'Colour and brand. Keep back one detail so you can check the owner’s claim.'} />
+        </label>
 
         <div className="two">
           <label>Category
@@ -77,20 +90,22 @@ export default function ReportItem() {
               {categories.map((c) => <option key={c}>{c}</option>)}
             </select>
           </label>
-          <label>Date {form.type === 'lost' ? 'lost' : 'found'} *<input type="date" required value={form.date} onChange={set('date')} /></label>
+          <label>{lost ? 'Date you lost it' : 'Date you found it'}<input type="date" required value={form.date} onChange={set('date')} /></label>
         </div>
 
-        <label>Location *<input required value={form.location} onChange={set('location')} placeholder="e.g. Library 2nd floor, Canteen, Block C" /></label>
-        <label>Image URL (optional)<input type="url" value={form.imageUrl} onChange={set('imageUrl')} placeholder="https://…" /></label>
+        <label>{lost ? 'Where did you last have it?' : 'Where did you find it?'}<input required value={form.location} onChange={set('location')} placeholder="Library, 2nd floor reading hall" /></label>
+        <label><span className="label-row">Photo link <span className="optional">optional</span></span><input type="url" value={form.imageUrl} onChange={set('imageUrl')} placeholder="https://" /></label>
 
-        <h3>Your contact details</h3>
+        <h2 className="form-section">How can people reach you?</h2>
         <div className="two">
-          <label>Name *<input required value={form.reporterName} onChange={set('reporterName')} /></label>
-          <label>Email *<input type="email" required value={form.reporterEmail} onChange={set('reporterEmail')} /></label>
+          <label>Your name<input required value={form.reporterName} onChange={set('reporterName')} autoComplete="name" /></label>
+          <label>Email<input type="email" required value={form.reporterEmail} onChange={set('reporterEmail')} autoComplete="email" /></label>
         </div>
-        <label>Phone<input value={form.reporterPhone} onChange={set('reporterPhone')} /></label>
+        <label><span className="label-row">Phone <span className="optional">optional</span></span><input value={form.reporterPhone} onChange={set('reporterPhone')} autoComplete="tel" /></label>
 
-        <button className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : id ? 'Save changes' : 'Submit report'}</button>
+        <button className="btn btn-primary btn-block" disabled={saving}>
+          {saving ? 'Saving' : id ? 'Save changes' : 'Post to the board'}
+        </button>
       </form>
     </div>
   );

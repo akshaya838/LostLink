@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { items as itemApi, claims as claimApi, errMsg } from '../api.js';
-import { Alert, Badge, Spinner, fmtDate } from '../components/ui.jsx';
+import { Alert, Badge, Spinner, Tag, fmtDate, timeAgo } from '../components/ui.jsx';
 
 const EMPTY_CLAIM = { claimantName: '', claimantEmail: '', claimantPhone: '', rollNumber: '', proofDescription: '' };
 
@@ -37,7 +37,7 @@ export default function ItemDetail() {
     setSuccess('');
     try {
       await claimApi.create({ ...form, itemId: id });
-      setSuccess('Claim submitted! An admin will review it on the Claims page.');
+      setSuccess('Claim sent. The lost and found desk will review it and contact you by email.');
       setForm(EMPTY_CLAIM);
       load();
     } catch (err) {
@@ -48,7 +48,7 @@ export default function ItemDetail() {
   }
 
   async function del() {
-    if (!confirm('Delete this item and all its claims?')) return;
+    if (!confirm('Delete this report and every claim on it? This cannot be undone.')) return;
     try {
       await itemApi.remove(id);
       navigate('/');
@@ -60,7 +60,7 @@ export default function ItemDetail() {
   async function resolve() {
     try {
       await itemApi.resolve(id);
-      setSuccess('Item marked as returned to its owner.');
+      setSuccess('Marked as returned to its owner.');
       load();
     } catch (err) {
       setError(errMsg(err));
@@ -69,89 +69,102 @@ export default function ItemDetail() {
 
   if (!data) return error ? <Alert>{error}</Alert> : <Spinner />;
   const { item, claims, claimServiceAvailable } = data;
-  const claimLabel = item.type === 'found' ? 'This is mine — claim it' : 'I found this item';
+  const isFound = item.type === 'found';
 
   return (
     <>
-      <p><Link to="/">← Back to all items</Link></p>
+      <Link to="/" className="back">Back to the board</Link>
       <Alert onClose={() => setError('')}>{error}</Alert>
       <Alert type="success" onClose={() => setSuccess('')}>{success}</Alert>
 
       <div className="detail">
-        <div className="card">
-          {item.imageUrl ? (
-            <img src={item.imageUrl} alt={item.title} className="hero-img" />
-          ) : (
-            <div className={`hero-img thumb-placeholder ${item.type}`}>{item.category}</div>
-          )}
-          <div className="item-body">
-            <div className="row">
-              <Badge value={item.type} />
-              <Badge value={item.status} />
-              <span className="chip">{item.category}</span>
-            </div>
-            <h1>{item.title}</h1>
-            <p>{item.description}</p>
-            <dl className="facts">
-              <dt>Location</dt><dd>{item.location}</dd>
-              <dt>Date {item.type}</dt><dd>{fmtDate(item.date)}</dd>
-              <dt>Reported by</dt><dd>{item.reporterName} · {item.reporterEmail}{item.reporterPhone && ` · ${item.reporterPhone}`}</dd>
-              {item.claimedBy && (<><dt>Claimed by</dt><dd>{item.claimedBy}</dd></>)}
-              <dt>Reported on</dt><dd>{fmtDate(item.createdAt)}</dd>
-            </dl>
-            <div className="row">
-              <Link className="btn" to={`/items/${id}/edit`}>Edit</Link>
-              {item.status === 'claimed' && <button className="btn btn-success" onClick={resolve}>Mark returned</button>}
-              <button className="btn btn-danger" onClick={del}>Delete</button>
-            </div>
+        <article className="detail-main">
+          <div className="detail-media">
+            {item.imageUrl ? <img src={item.imageUrl} alt={item.title} /> : <span className="item-cat">{item.category}</span>}
           </div>
-        </div>
+          <div className="detail-head">
+            <Tag item={item} size="tag-lg" />
+            <Badge value={item.status} />
+          </div>
+          <h1>{item.title}</h1>
+          <p className="detail-desc">{item.description}</p>
 
-        <div>
+          <dl className="facts">
+            <dt>Where</dt><dd>{item.location}</dd>
+            <dt>When</dt><dd>{fmtDate(item.date)}</dd>
+            <dt>Category</dt><dd>{item.category}</dd>
+            <dt>Posted by</dt>
+            <dd>
+              {item.reporterName}
+              <br />
+              <a href={`mailto:${item.reporterEmail}`}>{item.reporterEmail}</a>
+              {item.reporterPhone && <> or {item.reporterPhone}</>}
+            </dd>
+            {item.claimedBy && (<><dt>Claimed by</dt><dd>{item.claimedBy}</dd></>)}
+          </dl>
+
+          <div className="actions-row">
+            <Link className="btn" to={`/items/${id}/edit`}>Edit report</Link>
+            {item.status === 'claimed' && <button className="btn btn-primary" onClick={resolve}>Mark as returned</button>}
+            <button className="btn btn-quiet-danger" onClick={del}>Delete report</button>
+          </div>
+        </article>
+
+        <aside className="detail-side">
           {item.status === 'open' ? (
-            <form className="card form" onSubmit={submitClaim}>
-              <h2>{claimLabel}</h2>
-              <div className="two">
-                <label>Name *<input required value={form.claimantName} onChange={set('claimantName')} /></label>
-                <label>Email *<input type="email" required value={form.claimantEmail} onChange={set('claimantEmail')} /></label>
-              </div>
-              <div className="two">
-                <label>Phone<input value={form.claimantPhone} onChange={set('claimantPhone')} /></label>
-                <label>Roll / Staff No.<input value={form.rollNumber} onChange={set('rollNumber')} /></label>
-              </div>
+            <form className="panel form" onSubmit={submitClaim}>
+              <h2>{isFound ? 'Is this yours?' : 'Did you find this?'}</h2>
+              <p className="muted small">
+                {isFound
+                  ? 'Tell the desk something only the owner would know. They check every claim before handing anything over.'
+                  : 'Let the owner know where you found it and where it is now.'}
+              </p>
               <label>
-                {item.type === 'found' ? 'Proof of ownership *' : 'Where/how did you find it? *'}
-                <textarea required minLength={10} rows={3} value={form.proofDescription} onChange={set('proofDescription')}
-                  placeholder={item.type === 'found' ? 'Describe something only the owner would know (sticker, lock screen, contents)…' : 'Where you found it and where it is now…'} />
+                {isFound ? 'Proof that it’s yours' : 'Where you found it'}
+                <textarea required minLength={10} rows={4} value={form.proofDescription} onChange={set('proofDescription')}
+                  placeholder={isFound ? 'A sticker, the lock screen photo, what was inside' : 'Found near the library entrance, handed to security'} />
               </label>
-              <button className="btn btn-primary" disabled={busy}>{busy ? 'Submitting…' : 'Submit claim'}</button>
+              <div className="two">
+                <label>Your name<input required value={form.claimantName} onChange={set('claimantName')} autoComplete="name" /></label>
+                <label>Email<input type="email" required value={form.claimantEmail} onChange={set('claimantEmail')} autoComplete="email" /></label>
+              </div>
+              <div className="two">
+                <label><span className="label-row">Phone <span className="optional">optional</span></span><input value={form.claimantPhone} onChange={set('claimantPhone')} autoComplete="tel" /></label>
+                <label><span className="label-row">Roll or staff number <span className="optional">optional</span></span><input value={form.rollNumber} onChange={set('rollNumber')} /></label>
+              </div>
+              <button className="btn btn-primary btn-block" disabled={busy}>{busy ? 'Sending claim' : 'Send claim'}</button>
             </form>
           ) : (
-            <div className="card notice">This item is <Badge value={item.status} /> and no longer accepts claims.</div>
+            <div className="panel">
+              <h2>{item.status === 'claimed' ? 'Already claimed' : 'Returned to its owner'}</h2>
+              <p className="muted small">This item is no longer taking claims.</p>
+            </div>
           )}
 
-          <div className="card">
-            <h2>Claims ({claims.length})</h2>
-            <p className="muted small">Fetched by the Item Service from the Claim Service over REST.</p>
-            {!claimServiceAvailable && <Alert type="warn">Claim Service is currently unreachable — claims could not be loaded.</Alert>}
+          <div className="panel">
+            <div className="panel-head">
+              <h2>Claims</h2>
+              <span className="count">{claims.length}</span>
+            </div>
+            {!claimServiceAvailable && <Alert type="warn">Claims can't be loaded right now because the Claim Service isn't responding.</Alert>}
             {claims.length === 0 ? (
-              <p className="muted">No claims yet.</p>
+              <p className="muted small">No one has claimed this yet.</p>
             ) : (
               <ul className="claim-list">
                 {claims.map((c) => (
                   <li key={c._id}>
-                    <div className="row between">
+                    <div className="claim-top">
                       <strong>{c.claimantName}</strong>
                       <Badge value={c.status} />
                     </div>
-                    <p className="small muted">{fmtDate(c.createdAt)} · {c.claimantEmail}</p>
                     <p className="small">{c.proofDescription}</p>
+                    <p className="small muted">Sent {timeAgo(c.createdAt)}</p>
                   </li>
                 ))}
               </ul>
             )}
           </div>
-        </div>
+        </aside>
       </div>
     </>
   );

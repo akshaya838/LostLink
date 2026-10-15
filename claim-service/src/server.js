@@ -1,4 +1,6 @@
 require('dotenv').config();
+// Use public DNS so the mongodb+srv:// lookup works on networks/ISPs that block SRV queries
+require('dns').setServers(['8.8.8.8', '1.1.1.1']);
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
